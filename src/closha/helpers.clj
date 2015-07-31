@@ -38,3 +38,20 @@
   (lsb (+ x y) w))
   ([x y]
   (+mod x y 32)))
+
+
+(defn- bytes2int 
+    "create a 32 bit int from a seq of 4 bytes (big endian)"
+    [[a,b,c,d]] 
+    (reduce bit-or [(bit-shift-left a 24) (bit-shift-left b 16) (bit-shift-left c 8) d ]))
+
+(defn pad
+    "append 10000000 then convert string to 32bit integers"
+    [s]
+    (partition 16 16 (repeat 0)
+               (conj
+                   (vec (map bytes2int (partition 4 4 (repeat 0)(.getBytes (str s (char 0x80))))))
+                   (count(.getBytes (str s ))))
+               ))
+
+
