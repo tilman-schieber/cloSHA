@@ -82,7 +82,7 @@
         combine (fn [v1 v2] (map (partial apply +m) (map vector v1 v2)))]
     (loop [H initial-hash
            i 1]
-      (if (> i N) (apply str (map (partial format "%x") H))
+      (if (> i N) (apply str (map (partial format "%08x") H))
         (let [W (mschedule (nth msg (dec i))),
               H_new
                 (loop [vars H

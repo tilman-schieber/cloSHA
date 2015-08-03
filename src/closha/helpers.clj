@@ -32,14 +32,18 @@
   ([x n]
    (rotl x n 32)))
 
-(def +m 
+(def +m
   "addition modulo 2^32"
   (comp #(lsb % 32) +))
 
 (defn- bytes2int
     "create a 32 bit int from a seq of 4 bytes (big endian)"
     [[a,b,c,d]]
-    (reduce bit-or [(bit-shift-left a 24) (bit-shift-left b 16) (bit-shift-left c 8) d ]))
+    (reduce bit-or
+      [(bit-shift-left a 24)
+       (bit-shift-left (bit-and 0xff b) 16)
+       (bit-shift-left (bit-and 0xff c) 8)
+       (bit-and 0xff d)]))
 
 (defn pad
     "convert string to blocks of 16 32bit integers"
