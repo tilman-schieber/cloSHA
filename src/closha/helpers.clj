@@ -32,26 +32,19 @@
   ([x n]
    (rotl x n 32)))
 
-(defn +mod
-  "(x+y) mod 2^w, defaults to w=32"
-  ([x y w]
-  (lsb (+ x y) w))
-  ([x y]
-  (+mod x y 32)))
+(def +m 
+  "addition modulo 2^32"
+  (comp #(lsb % 32) +))
 
-
-(defn- bytes2int 
+(defn- bytes2int
     "create a 32 bit int from a seq of 4 bytes (big endian)"
-    [[a,b,c,d]] 
+    [[a,b,c,d]]
     (reduce bit-or [(bit-shift-left a 24) (bit-shift-left b 16) (bit-shift-left c 8) d ]))
 
 (defn pad
-    "append 10000000 then convert string to 32bit integers"
+    "convert string to blocks of 16 32bit integers"
     [s]
     (partition 16 16 (repeat 0)
                (conj
                    (vec (map bytes2int (partition 4 4 (repeat 0)(.getBytes (str s (char 0x80))))))
-                   (count(.getBytes (str s ))))
-               ))
-
-
+                   (count(.getBytes (str s ))))))
