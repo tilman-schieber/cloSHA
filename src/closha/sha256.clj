@@ -57,46 +57,40 @@
 
 (defn- mschedule
   "SHA-256 message schedule §6.2.2-1"
-  [M]
-  (loop [m (vec M)]
+  [msg-block]
+  (loop [m (vec msg-block)]
     (let [t (count m)]
-      (if (= t 64) m
+      (if (>= t 64) m
         (recur (conj m
-          (lsb (+ (σ1 (m (- t 2))) (m (- t 7))
-                  (σ1 (m (- t 15))) (m (- t 16))))))))))
+          (+m (σ1 (m (- t 2))) (m (- t 7))
+              (σ0 (m (- t 15))) (m (- t 16)))))))))
 
 
 (defn- var-iter
-  "re-assign temporary variables a-h according to §6.2.2-3"
-  [[a b c d e f g h] K_t W_t]
-  (let [T1 (+m (Σ1 e) (Ch e f g) K_t W_t)
-        T2 (+m (Σ0 a) (Maj a b c))]
-    ;    a      b c d     e     f g h
-    [(+m T1 T2) a b c (+m d T1) e f g]))
+  "iteration over the message schedule according to §6.2.2-3"
+  [intermediate-hash msg-schedule]
+  (loop [vars intermediate-hash
+         t 0]
+    (if (= t 64)
+      vars
+      (let [[a b c d e f g h] vars
+                T1 (+m h (Σ1 e) (Ch e f g) (constants t) (msg-schedule t))
+                T2 (+m (Σ0 a) (Maj a b c))]
+        ;           a      b c d     e     f g h
+        (recur [(+m T1 T2) a b c (+m d T1) e f g] (inc t))))))
 
 (defn sha256
   "SHA 256 Algorithm"
   [s]
   (let [msg (pad s)  ; msg is the padded message as a list of N lists of 16 32-bit integers
-        N (count msg)
-        combine (fn [v1 v2] (map (partial apply +m) (map vector v1 v2)))]
+        combine (fn [v1 v2] (map (partial apply +m) (map vector v1 v2)))
+        to-digest (fn [H] (apply str (map (partial format "%08x") H)))]
     (loop [H initial-hash
-           i 1]
-      (if (> i N) (apply str (map (partial format "%08x") H))
-        (let [W (mschedule (nth msg (dec i))),
-              H_new
-                (loop [vars H
-                       t 0]
-                  (if (= t 64) vars
-                    (recur (var-iter vars (constants t) (W t)) (inc t))))]
-        (recur (combine H H_new) (inc i) ))))))
-
-
-
-
-
-
-
+           i 0]
+      (if (= i (count msg))
+        (to-digest H)
+        (let [W (mschedule (nth msg i))]
+          (recur (combine H (var-iter H W)) (inc i) ))))))
 
 
 

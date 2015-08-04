@@ -6,35 +6,29 @@
 
 (ns closha.helpers)
 
-
 (defn lsb
-  "return the w least significant bits of a number, defaults to 32"
+  "return the 32 least significant bits of a number"
   ([x]
-   (lsb x 32))
-  ([x w]
-    (mod x (bit-shift-left 1 w))))
+    (unchecked-int (mod x (bit-shift-left 1 32)))))
+
 
 (defn rotr
-  "rotate right (circular right shift) a w-bit value x by n positions; defaults to w=32;"
-  ([x n w]
-  (let [x (lsb x w)
-        n (mod n w)]
+  "rotate right (circular right shift) a 32-bit value x by n positions"
+  ([x n]
+  (let [x (lsb x)
+        n (mod n 32)]
   (bit-or
     (unsigned-bit-shift-right x n)
-    (lsb (bit-shift-left x (- w n)) w))))
-  ([x n]
-   (rotr x n 32)))
+    (lsb (bit-shift-left x (- 32 n)))))))
 
 (defn rotl
-  "rotate left (circular left shift) a w-bit value x by n positions; defaults to w=32"
-  ([x n w]
-  (rotr x (- w (mod n w)) w))
+  "rotate left (circular left shift) a 32 bit value x by n positions"
   ([x n]
-   (rotl x n 32)))
+  (rotr x (- 32 (mod n 32)))))
 
 (def +m
   "addition modulo 2^32"
-  (comp #(lsb % 32) +))
+  (comp #(lsb %) +))
 
 (defn- bytes2int
     "create a 32 bit int from a seq of 4 bytes (big endian)"
