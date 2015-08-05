@@ -20,3 +20,7 @@
     (testing "does rotr(n,1) half even numbers?"
       (let [lst (take 32 (filter even? (repeatedly #(rand-int (Integer/MAX_VALUE)))))]
         (is (= (map #(rotr % 1) lst) (map #(/ % 2) lst)))))))
+
+;(deftest pad-test
+;  (testing "test padding according to csrc.nist.gov/groups/ST/toolkit/documents/Examples/SHA256.pdf")
+;    (is (= (pad "abc") (vector )))

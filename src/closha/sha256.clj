@@ -55,7 +55,7 @@
   "SHA-256 initial hash values H_0 to H_7 according to §5.3.3"
   [0x6a09e667 0xbb67ae85 0x3c6ef372 0xa54ff53a 0x510e527f 0x9b05688c 0x1f83d9ab 0x5be0cd19])
 
-(defn- mschedule
+(defn mschedule
   "SHA-256 message schedule §6.2.2-1"
   [msg-block]
   (loop [m (vec msg-block)]
@@ -66,7 +66,7 @@
               (σ0 (m (- t 15))) (m (- t 16)))))))))
 
 
-(defn- var-iter
+(defn var-iter
   "iteration over the message schedule according to §6.2.2-3"
   [intermediate-hash msg-schedule]
   (loop [vars intermediate-hash
@@ -77,12 +77,13 @@
                 T1 (+m h (Σ1 e) (Ch e f g) (constants t) (msg-schedule t))
                 T2 (+m (Σ0 a) (Maj a b c))]
         ;           a      b c d     e     f g h
+        (do (println  (map (partial format "%08x") [(+m T1 T2) a b c (+m d T1) e f g]))
         (recur [(+m T1 T2) a b c (+m d T1) e f g] (inc t))))))
-
+)
 (defn sha256
   "SHA 256 Algorithm"
   [s]
-  (let [msg (pad s)  ; msg is the padded message as a list of N lists of 16 32-bit integers
+  (let [msg (partition 16 (pad s))  ; msg is the padded message as a list of N lists of 16 32-bit integers
         combine (fn [v1 v2] (map (partial apply +m) (map vector v1 v2)))
         to-digest (fn [H] (apply str (map (partial format "%08x") H)))]
     (loop [H initial-hash
@@ -91,7 +92,6 @@
         (to-digest H)
         (let [W (mschedule (nth msg i))]
           (recur (combine H (var-iter H W)) (inc i) ))))))
-
 
 
 
