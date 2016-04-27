@@ -1,6 +1,7 @@
 (ns closha.core
     (:require [closha.helpers :refer :all]
-              [closha.sha256 :refer :all]))
+              [closha.sha256 :refer :all]
+              [closha.aes :refer :all]))
 
 ; CloSHA - SHA algorithms in clojure
 ;

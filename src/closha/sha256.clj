@@ -78,7 +78,7 @@
                 T2 (+m (Σ0 a) (Maj a b c))]
         ;           a      b c d     e     f g h
         (recur [(+m T1 T2) a b c (+m d T1) e f g] (inc t))))))
-        
+
 (defn sha256
   "SHA 256 Algorithm"
   [s]

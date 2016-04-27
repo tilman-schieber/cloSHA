@@ -2,6 +2,6 @@
   (:require [clojure.test :refer :all]
             [closha.core :refer :all]))
 
-(deftest a-test
-  (testing "FIXME, I fail."
-    (is (= 1 1))))
+(deftest inverse-test
+  (testing "test the multiplicative inverse elements for all x in GF(2^8)"
+    (is (every? (partial = 1) (map #(gmul % (ginv %)) (range 1 255))))))
