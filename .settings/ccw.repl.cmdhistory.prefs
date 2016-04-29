@@ -1,0 +1,2 @@
+cmdhistory=["(sha256 \\"hi\\")" "*ns*" "(sha256 \\"hi\\")" "closha.sha256" "(closha.sha256/sha256 \\"hi\\")" "(use closha.sha256)" "(foo 2)" "(+ 2 2)" "(pad \\"hi\\")" "(+m 2 2)" "(+ 2 2)" "(sha256 \\"hi\\")" "(pad \\"hi\\")" "(pad \\"iudhfiudhfiushfdpoihsdoifu\\")" "[1 2 3]" "(pad \\"iudhfiudhfiushfdpoihsdoifu\\")"]
+eclipse.preferences.version=1
