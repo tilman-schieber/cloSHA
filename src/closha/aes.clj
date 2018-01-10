@@ -152,17 +152,35 @@
 
 (def mix-columns-1 (partial apply-to-cols mix-column-1))
 
+; helper functions:
+(def hex #(format "%02x" %))
+
+
+
+; ----------------------
+
 (defn expand-key
-  "Key Expansion FIPS-197 p.19f"
+  "Key Expansion FIPS-197 p.19f
+  see also http://www.samiam.org/key-schedule.html"
   [key]
-  (let [sub-word (partial map s-box)
+  {:pre [(contains? #{128 192 256}(* 8 (count key)))]}
+  (let [xorv (partial mapv bit-xor)
+        sub-word (partial map s-box)
         rot-word (partial rotate 1)
-        r-con #(vector (nth (cons 0 (iterate (partial gmul 2) 1)) %) 0 0 0)
-        Nk (quot (count key) 4)
+        r-con (fn [i] (vector (nth (cons 0 (iterate (partial gmul 2) 1)) i) 0 0 0))
+        core (fn [i w] ((comp (partial xorv (r-con i)) sub-word rot-word) w))
+        Nk (quot (count key) 4) ; key-length in 32-bit words
+        Nr (+ 6 Nk) ; number of rounds
         ]
-  ;(loop [sched key]))
-  ;))
-))
+  (loop [sched (vec (partition 4 key)), j Nk] ; initialize key schedule to key
+    (if (= (count sched) (* 4 (inc Nr))) (vec (flatten sched))
+                 (let [wi-nk (first (take-last Nk sched))
+                       wi-1 (last sched)
+                       wi (cond (zero? (mod j Nk)) (core (quot j Nk) wi-1)
+                                (and (= 4 (mod j Nk)) (= Nk 8)) (sub-word wi-1)
+                                :else wi-1)]
+                   (recur (conj sched (xorv wi-nk wi)) (inc j)))))))
+
 
 (def add-round-key
   "bytewise XOR of the state with the round key"
