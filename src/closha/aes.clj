@@ -100,7 +100,7 @@
   {:pre [(= (count state) 16)]}
   (map s-box state))
 
-(defn rotate
+(defn- rotate
   "Take a collection and rotates it n steps left. If n is negative,
   the collection is rotated right."
   [n col]
@@ -112,50 +112,39 @@
    FIPS-197 p.17"
   [state]
   {:pre [(= (count state) 16)]}
-  (loop [rows (vec (partition 4 state));
-         i 0]
-    (if (> i 3) (vec (flatten rows))
-      (recur (assoc rows i (rotate i (nth rows i))) (inc i)))))
+  (let [s (vec state)]
+  (vector (s 0) (s 5) (s 10) (s 15)
+          (s 4) (s 9) (s 14) (s 3)
+          (s 8) (s 13) (s 2) (s 7)
+          (s 12) (s 1) (s 6) (s 11))))
 
 
-(defn mix-column
-  "mix one column (a vector of 4 bytes) according to FIPS-197 p.17"
-  [[s0c s1c s2c s3c]]
-  (vector (bit-xor (gmul 2 s0c) (gmul 3 s1c) s2c s3c)
-          (bit-xor s0c (gmul 2 s1c) (gmul 3 s2c) s3c)
-          (bit-xor s0c s1c (gmul 2 s2c) (gmul 3 s3c))
-          (bit-xor (gmul 3 s0c) s1c s2c (gmul 2 s3c))));
 
-(defn mix-column-1
-  "mix one column according to the inverse transform.
+(defn mix-columns
+  "mix columns according to FIPS-197 p.17"
+  [state]
+  (letfn
+    [(mix-column [[s0c s1c s2c s3c]]
+       (vector (bit-xor (gmul 2 s0c) (gmul 3 s1c) s2c s3c)
+               (bit-xor s0c (gmul 2 s1c) (gmul 3 s2c) s3c)
+               (bit-xor s0c s1c (gmul 2 s2c) (gmul 3 s3c))
+               (bit-xor (gmul 3 s0c) s1c s2c (gmul 2 s3c))))]
+  (flatten (map mix-column (partition 4 state)))))
+
+(defn mix-columns-1
+  "mix columns according to the inverse transform.
   FIPS-197 p.23"
-  [[s0c s1c s2c s3c]]
-  (vector (bit-xor (gmul 0x0e s0c) (gmul 0x0b s1c) (gmul 0x0d s2c) (gmul 0x09 s3c))
-          (bit-xor (gmul 0x09 s0c) (gmul 0x0e s1c) (gmul 0x0b s2c) (gmul 0x0d s3c))
-          (bit-xor (gmul 0x0d s0c) (gmul 0x09 s1c) (gmul 0x0e s2c) (gmul 0x0b s3c))
-          (bit-xor (gmul 0x0b s0c) (gmul 0x0d s1c) (gmul 0x09 s2c) (gmul 0x0e s3c))));
-
-(defn apply-to-cols
-  "apply a function to the columns of a 4x4 state matrix, given as a vector of size 16"
-  [f v]
-  {:pre [(= (count v) 16 )]}
-  (letfn [(transpose [m] (apply map vector m))]
-    (->> v
-         (partition 4)
-         transpose
-         (map f)
-         transpose
-         flatten
-         vec)))
-
-(def mix-columns (partial apply-to-cols mix-column))
-
-(def mix-columns-1 (partial apply-to-cols mix-column-1))
+  [state]
+  (letfn
+    [(mix-column-1 [[s0c s1c s2c s3c]]
+       (vector (bit-xor (gmul 0x0e s0c) (gmul 0x0b s1c) (gmul 0x0d s2c) (gmul 0x09 s3c))
+               (bit-xor (gmul 0x09 s0c) (gmul 0x0e s1c) (gmul 0x0b s2c) (gmul 0x0d s3c))
+               (bit-xor (gmul 0x0d s0c) (gmul 0x09 s1c) (gmul 0x0e s2c) (gmul 0x0b s3c))
+               (bit-xor (gmul 0x0b s0c) (gmul 0x0d s1c) (gmul 0x09 s2c) (gmul 0x0e s3c))))];
+  (flatten (map mix-column-1 (partition 4 state)))))
 
 ; helper functions:
 (def hex #(format "%02x" %))
-
-
 
 ; ----------------------
 
@@ -173,7 +162,7 @@
         Nr (+ 6 Nk) ; number of rounds
         ]
   (loop [sched (vec (partition 4 key)), j Nk] ; initialize key schedule to key
-    (if (= (count sched) (* 4 (inc Nr))) (vec (flatten sched))
+    (if (= (count sched) (* 4 (inc Nr))) (partition 16 (flatten sched))
                  (let [wi-nk (first (take-last Nk sched))
                        wi-1 (last sched)
                        wi (cond (zero? (mod j Nk)) (core (quot j Nk) wi-1)
@@ -185,3 +174,24 @@
 (def add-round-key
   "bytewise XOR of the state with the round key"
   (partial mapv bit-xor))
+
+(defn cypher
+  "the cypher for 128 bit blocks"
+  [in key]
+  (let [sched (expand-key key)
+        Nk (quot (count key) 4) ; key-length in 32-bit words
+        Nr (+ 6 Nk)] ; number of rounds
+    (loop [state (add-round-key in (first sched))
+           round 1]
+           (do
+;              (println "Round " round)
+;              (println "current state" (map hex state))
+;              (println "after subbytes " (map hex (sub-bytes state)))
+;              (println "after shiftrows "(map hex (shift-rows (sub-bytes state))))
+;              (println "after mixcolumns "(map hex (mix-columns (shift-rows (sub-bytes state)))))
+;              (println "round key: " (map hex (nth sched round)))
+;              (println)
+             (if (= Nr round)
+               (->> state sub-bytes shift-rows (add-round-key (last sched)))
+               (recur (->> state sub-bytes shift-rows mix-columns (add-round-key (nth sched round)))
+                    (inc round)))))))
