@@ -75,7 +75,7 @@
            (bit-rot-left x 4)
            0x63))
 
-(def s-box-r-1
+(def inv-s-box-r
  "the inverse affine transformation s-box ^ -1 = s-box-r ^ 3
   source: https://crypto.stackexchange.com/a/17931"
  (let [r s-box-r] (comp r r r)))
@@ -84,21 +84,27 @@
   "The Rjindael s-box"
   (vec (map (comp s-box-r ginv) (range 0 256))))
 
-(def s-box-1
+(def inv-s-box
   "The inverted s-box"
-  (vec (map (comp ginv s-box-r-1) (range 0 256))))
+  (vec (map (comp ginv inv-s-box-r) (range 0 256))))
 
-(def s-box-1-deprecated
-  "calculating the inverted s-box by walking through the s-box"
-  (loop [s (vec (take 256 (repeat 0)))
-       i 0]
-       (if (= i 256) s (recur (assoc s (s-box i) i) (inc i)))))
+;(def inv-s-box-deprecated
+;  "calculating the inverted s-box by walking through the s-box"
+;  (loop [s (vec (take 256 (repeat 0)))
+;       i 0]
+;       (if (= i 256) s (recur (assoc s (s-box i) i) (inc i)))))
 
 (defn sub-bytes
   "SubBytes() according to FIPS-197 p.15f"
   [state]
   {:pre [(= (count state) 16)]}
   (map s-box state))
+
+(defn inv-sub-bytes
+  "InvSubBytes() according to FIPS-197 p.22"
+  [state]
+  {:pre [(= (count state) 16)]}
+  (map inv-s-box state))
 
 (defn- rotate
   "Take a collection and rotates it n steps left. If n is negative,
@@ -118,11 +124,23 @@
           (s 8) (s 13) (s 2) (s 7)
           (s 12) (s 1) (s 6) (s 11))))
 
+(defn inv-shift-rows
+  "Inverse row rotation
+   FIPS-197 p.21"
+  [state]
+  {:pre [(= (count state) 16)]}
+  (let [s (vec state)]
+  (vector (s 0) (s 13) (s 10) (s 7)
+          (s 4) (s 1) (s 14) (s 11)
+          (s 8) (s 5) (s 2) (s 15)
+          (s 12) (s 9) (s 6) (s 3))))
+
 
 
 (defn mix-columns
   "mix columns according to FIPS-197 p.17"
   [state]
+  {:pre [(= (count state) 16)]}
   (letfn
     [(mix-column [[s0c s1c s2c s3c]]
        (vector (bit-xor (gmul 2 s0c) (gmul 3 s1c) s2c s3c)
@@ -131,17 +149,18 @@
                (bit-xor (gmul 3 s0c) s1c s2c (gmul 2 s3c))))]
   (flatten (map mix-column (partition 4 state)))))
 
-(defn mix-columns-1
+(defn inv-mix-columns
   "mix columns according to the inverse transform.
   FIPS-197 p.23"
   [state]
+  {:pre [(= (count state) 16)]}
   (letfn
-    [(mix-column-1 [[s0c s1c s2c s3c]]
+    [(inv-mix-column [[s0c s1c s2c s3c]]
        (vector (bit-xor (gmul 0x0e s0c) (gmul 0x0b s1c) (gmul 0x0d s2c) (gmul 0x09 s3c))
                (bit-xor (gmul 0x09 s0c) (gmul 0x0e s1c) (gmul 0x0b s2c) (gmul 0x0d s3c))
                (bit-xor (gmul 0x0d s0c) (gmul 0x09 s1c) (gmul 0x0e s2c) (gmul 0x0b s3c))
                (bit-xor (gmul 0x0b s0c) (gmul 0x0d s1c) (gmul 0x09 s2c) (gmul 0x0e s3c))))];
-  (flatten (map mix-column-1 (partition 4 state)))))
+  (flatten (map inv-mix-column (partition 4 state)))))
 
 ; helper functions:
 (def hex #(format "%02x" %))
@@ -178,20 +197,30 @@
 (defn cypher
   "the cypher for 128 bit blocks"
   [in key]
+  {:pre [(contains? #{128 192 256}(* 8 (count key)))
+        (= 128 (* 8 (count in)))]}
   (let [sched (expand-key key)
         Nk (quot (count key) 4) ; key-length in 32-bit words
         Nr (+ 6 Nk)] ; number of rounds
     (loop [state (add-round-key in (first sched))
            round 1]
-           (do
-;              (println "Round " round)
-;              (println "current state" (map hex state))
-;              (println "after subbytes " (map hex (sub-bytes state)))
-;              (println "after shiftrows "(map hex (shift-rows (sub-bytes state))))
-;              (println "after mixcolumns "(map hex (mix-columns (shift-rows (sub-bytes state)))))
-;              (println "round key: " (map hex (nth sched round)))
-;              (println)
              (if (= Nr round)
                (->> state sub-bytes shift-rows (add-round-key (last sched)))
                (recur (->> state sub-bytes shift-rows mix-columns (add-round-key (nth sched round)))
-                    (inc round)))))))
+                    (inc round))))))
+
+(defn inv-cypher
+  "the inverse cypher for 128 bit blocks"
+  [in key]
+  {:pre [(contains? #{128 192 256}(* 8 (count key)))
+        (= 128 (* 8 (count in)))]}
+  (let [sched (expand-key key)
+        Nk (quot (count key) 4) ; key-length in 32-bit words
+        Nr (+ 6 Nk)] ; number of rounds
+    (loop [state (add-round-key in (last sched))
+           round (dec Nr)]
+             (if (= 0 round)
+               (->> state inv-shift-rows inv-sub-bytes (add-round-key (first sched)))
+               (recur (->> state inv-shift-rows inv-sub-bytes
+                           (add-round-key (nth sched round)) inv-mix-columns )
+                    (dec round))))))
