@@ -31,7 +31,7 @@
   "Logarithmic chart for 0xe5. The i-th position is n in the equation 0xe5^n=i
    For i=0 the value is undefined.
    Source: http://www.samiam.org/galois.html"
-  [   0 0xff 0xc8 0x08 0x91 0x10 0xd0 0x36 0x5a 0x3e 0xd8 0x43 0x99 0x77 0xfe 0x18
+  [0 0xff 0xc8 0x08 0x91 0x10 0xd0 0x36 0x5a 0x3e 0xd8 0x43 0x99 0x77 0xfe 0x18
    0x23 0x20 0x07 0x70 0xa1 0x6c 0x0c 0x7f 0x62 0x8b 0x40 0x46 0xc7 0x4b 0xe0 0x0e
    0xeb 0x16 0xe8 0xad 0xcf 0xcd 0x39 0x53 0x6a 0x27 0x35 0x93 0xd4 0x4e 0x48 0xc3
    0x2b 0x79 0x54 0x28 0x09 0x78 0x0f 0x21 0x90 0x87 0x14 0x2a 0xa9 0x9c 0xd6 0x74
@@ -62,7 +62,6 @@
   [x n]
   (bit-and (bit-or (bit-shift-left x n) (bit-shift-right x (- 8 n))) 0xff))
 
-
 ;(def bit-rot-right #(bit-rot-left %1 (- 8 %2)))
 
 (defn s-box-r
@@ -76,9 +75,9 @@
            0x63))
 
 (def inv-s-box-r
- "the inverse affine transformation s-box ^ -1 = s-box-r ^ 3
+  "the inverse affine transformation s-box ^ -1 = s-box-r ^ 3
   source: https://crypto.stackexchange.com/a/17931"
- (let [r s-box-r] (comp r r r)))
+  (let [r s-box-r] (comp r r r)))
 
 (def s-box
   "The Rjindael s-box"
@@ -119,10 +118,10 @@
   [state]
   {:pre [(= (count state) 16)]}
   (let [s (vec state)]
-  (vector (s 0) (s 5) (s 10) (s 15)
-          (s 4) (s 9) (s 14) (s 3)
-          (s 8) (s 13) (s 2) (s 7)
-          (s 12) (s 1) (s 6) (s 11))))
+    (vector (s 0) (s 5) (s 10) (s 15)
+            (s 4) (s 9) (s 14) (s 3)
+            (s 8) (s 13) (s 2) (s 7)
+            (s 12) (s 1) (s 6) (s 11))))
 
 (defn inv-shift-rows
   "Inverse row rotation
@@ -130,24 +129,22 @@
   [state]
   {:pre [(= (count state) 16)]}
   (let [s (vec state)]
-  (vector (s 0) (s 13) (s 10) (s 7)
-          (s 4) (s 1) (s 14) (s 11)
-          (s 8) (s 5) (s 2) (s 15)
-          (s 12) (s 9) (s 6) (s 3))))
-
-
+    (vector (s 0) (s 13) (s 10) (s 7)
+            (s 4) (s 1) (s 14) (s 11)
+            (s 8) (s 5) (s 2) (s 15)
+            (s 12) (s 9) (s 6) (s 3))))
 
 (defn mix-columns
   "mix columns according to FIPS-197 p.17"
   [state]
   {:pre [(= (count state) 16)]}
   (letfn
-    [(mix-column [[s0c s1c s2c s3c]]
-       (vector (bit-xor (gmul 2 s0c) (gmul 3 s1c) s2c s3c)
-               (bit-xor s0c (gmul 2 s1c) (gmul 3 s2c) s3c)
-               (bit-xor s0c s1c (gmul 2 s2c) (gmul 3 s3c))
-               (bit-xor (gmul 3 s0c) s1c s2c (gmul 2 s3c))))]
-  (flatten (map mix-column (partition 4 state)))))
+   [(mix-column [[s0c s1c s2c s3c]]
+      (vector (bit-xor (gmul 2 s0c) (gmul 3 s1c) s2c s3c)
+              (bit-xor s0c (gmul 2 s1c) (gmul 3 s2c) s3c)
+              (bit-xor s0c s1c (gmul 2 s2c) (gmul 3 s3c))
+              (bit-xor (gmul 3 s0c) s1c s2c (gmul 2 s3c))))]
+    (flatten (map mix-column (partition 4 state)))))
 
 (defn inv-mix-columns
   "mix columns according to the inverse transform.
@@ -155,12 +152,12 @@
   [state]
   {:pre [(= (count state) 16)]}
   (letfn
-    [(inv-mix-column [[s0c s1c s2c s3c]]
-       (vector (bit-xor (gmul 0x0e s0c) (gmul 0x0b s1c) (gmul 0x0d s2c) (gmul 0x09 s3c))
-               (bit-xor (gmul 0x09 s0c) (gmul 0x0e s1c) (gmul 0x0b s2c) (gmul 0x0d s3c))
-               (bit-xor (gmul 0x0d s0c) (gmul 0x09 s1c) (gmul 0x0e s2c) (gmul 0x0b s3c))
-               (bit-xor (gmul 0x0b s0c) (gmul 0x0d s1c) (gmul 0x09 s2c) (gmul 0x0e s3c))))];
-  (flatten (map inv-mix-column (partition 4 state)))))
+   [(inv-mix-column [[s0c s1c s2c s3c]]
+      (vector (bit-xor (gmul 0x0e s0c) (gmul 0x0b s1c) (gmul 0x0d s2c) (gmul 0x09 s3c))
+              (bit-xor (gmul 0x09 s0c) (gmul 0x0e s1c) (gmul 0x0b s2c) (gmul 0x0d s3c))
+              (bit-xor (gmul 0x0d s0c) (gmul 0x09 s1c) (gmul 0x0e s2c) (gmul 0x0b s3c))
+              (bit-xor (gmul 0x0b s0c) (gmul 0x0d s1c) (gmul 0x09 s2c) (gmul 0x0e s3c))))];
+    (flatten (map inv-mix-column (partition 4 state)))))
 
 ; helper functions:
 (def hex #(format "%02x" %))
@@ -171,24 +168,23 @@
   "Key Expansion FIPS-197 p.19f
   see also http://www.samiam.org/key-schedule.html"
   [key]
-  {:pre [(contains? #{128 192 256}(* 8 (count key)))]}
+  {:pre [(contains? #{128 192 256} (* 8 (count key)))]}
   (let [xorv (partial mapv bit-xor)
         sub-word (partial map s-box)
         rot-word (partial rotate 1)
         r-con (fn [i] (vector (nth (cons 0 (iterate (partial gmul 2) 1)) i) 0 0 0))
         core (fn [i w] ((comp (partial xorv (r-con i)) sub-word rot-word) w))
         Nk (quot (count key) 4) ; key-length in 32-bit words
-        Nr (+ 6 Nk) ; number of rounds
-        ]
-  (loop [sched (vec (partition 4 key)), j Nk] ; initialize key schedule to key
-    (if (= (count sched) (* 4 (inc Nr))) (partition 16 (flatten sched))
-                 (let [wi-nk (first (take-last Nk sched))
-                       wi-1 (last sched)
-                       wi (cond (zero? (mod j Nk)) (core (quot j Nk) wi-1)
-                                (and (= 4 (mod j Nk)) (= Nk 8)) (sub-word wi-1)
-                                :else wi-1)]
-                   (recur (conj sched (xorv wi-nk wi)) (inc j)))))))
+        Nr (+ 6 Nk)] ; number of rounds
 
+    (loop [sched (vec (partition 4 key)), j Nk] ; initialize key schedule to key
+      (if (= (count sched) (* 4 (inc Nr))) (partition 16 (flatten sched))
+          (let [wi-nk (first (take-last Nk sched))
+                wi-1 (last sched)
+                wi (cond (zero? (mod j Nk)) (core (quot j Nk) wi-1)
+                         (and (= 4 (mod j Nk)) (= Nk 8)) (sub-word wi-1)
+                         :else wi-1)]
+            (recur (conj sched (xorv wi-nk wi)) (inc j)))))))
 
 (def add-round-key
   "bytewise XOR of the state with the round key"
@@ -197,30 +193,30 @@
 (defn cypher
   "the cypher for 128 bit blocks"
   [in key]
-  {:pre [(contains? #{128 192 256}(* 8 (count key)))
-        (= 128 (* 8 (count in)))]}
+  {:pre [(contains? #{128 192 256} (* 8 (count key)))
+         (= 128 (* 8 (count in)))]}
   (let [sched (expand-key key)
         Nk (quot (count key) 4) ; key-length in 32-bit words
         Nr (+ 6 Nk)] ; number of rounds
     (loop [state (add-round-key in (first sched))
            round 1]
-             (if (= Nr round)
-               (->> state sub-bytes shift-rows (add-round-key (last sched)))
-               (recur (->> state sub-bytes shift-rows mix-columns (add-round-key (nth sched round)))
-                    (inc round))))))
+      (if (= Nr round)
+        (->> state sub-bytes shift-rows (add-round-key (last sched)))
+        (recur (->> state sub-bytes shift-rows mix-columns (add-round-key (nth sched round)))
+               (inc round))))))
 
 (defn inv-cypher
   "the inverse cypher for 128 bit blocks"
   [in key]
-  {:pre [(contains? #{128 192 256}(* 8 (count key)))
-        (= 128 (* 8 (count in)))]}
+  {:pre [(contains? #{128 192 256} (* 8 (count key)))
+         (= 128 (* 8 (count in)))]}
   (let [sched (expand-key key)
         Nk (quot (count key) 4) ; key-length in 32-bit words
         Nr (+ 6 Nk)] ; number of rounds
     (loop [state (add-round-key in (last sched))
            round (dec Nr)]
-             (if (= 0 round)
-               (->> state inv-shift-rows inv-sub-bytes (add-round-key (first sched)))
-               (recur (->> state inv-shift-rows inv-sub-bytes
-                           (add-round-key (nth sched round)) inv-mix-columns )
-                    (dec round))))))
+      (if (= 0 round)
+        (->> state inv-shift-rows inv-sub-bytes (add-round-key (first sched)))
+        (recur (->> state inv-shift-rows inv-sub-bytes
+                    (add-round-key (nth sched round)) inv-mix-columns)
+               (dec round))))))

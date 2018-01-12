@@ -7,7 +7,6 @@
 (ns closha.sha256
   (:require [closha.helpers :refer :all]))
 
-
 ;
 ; §4.1.2 SHA-224 and SHA-256 Functions
 ;
@@ -61,10 +60,9 @@
   (loop [m (vec msg-block)]
     (let [t (count m)]
       (if (>= t 64) m
-        (recur (conj m
-          (+m (σ1 (m (- t 2))) (m (- t 7))
-              (σ0 (m (- t 15))) (m (- t 16)))))))))
-
+          (recur (conj m
+                       (+m (σ1 (m (- t 2))) (m (- t 7))
+                           (σ0 (m (- t 15))) (m (- t 16)))))))))
 
 (defn var-iter
   "iteration over the message schedule according to §6.2.2-3"
@@ -74,8 +72,8 @@
     (if (= t 64)
       vars
       (let [[a b c d e f g h] vars
-                T1 (+m h (Σ1 e) (Ch e f g) (constants t) (msg-schedule t))
-                T2 (+m (Σ0 a) (Maj a b c))]
+            T1 (+m h (Σ1 e) (Ch e f g) (constants t) (msg-schedule t))
+            T2 (+m (Σ0 a) (Maj a b c))]
         ;           a      b c d     e     f g h
         (recur [(+m T1 T2) a b c (+m d T1) e f g] (inc t))))))
 
@@ -90,10 +88,6 @@
       (if (= i (count msg))
         (to-digest H)
         (let [W (mschedule (nth msg i))]
-          (recur (combine H (var-iter H W)) (inc i) ))))))
-
-
-
-
+          (recur (combine H (var-iter H W)) (inc i)))))))
 
 ;

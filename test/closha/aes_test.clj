@@ -8,7 +8,7 @@
   (testing "test the multiplicative inverse elements for all x in GF(2^8)"
     (is (every? (partial = 1) (map #(gmul % (ginv %)) (range 1 255)))))
   (testing "are the first five inverse elements correct?"
-    (is (= (range 1 5) (map ginv [1 141 246 203] )))))
+    (is (= (range 1 5) (map ginv [1 141 246 203])))))
 
 (deftest cipher-test
   (let [plaintext [0x00 0x11 0x22 0x33 0x44 0x55 0x66 0x77
@@ -19,16 +19,16 @@
                         0xd8 0xcd 0xb7 0x80 0x70 0xb4 0xc5 0x5a]]
         (is (= cyphertext (cypher plaintext key)))))
     (testing "AES-192 test FIPS-197 C.2 p.38f"
-          (let [key (range 0 24)
-                cyphertext [0xdd 0xa9 0x7c 0xa4 0x86 0x4c 0xdf 0xe0
-                            0x6e 0xaf 0x70 0xa0 0xec 0x0d 0x71 0x91]]
-            (is (= cyphertext (cypher plaintext key)))))
+      (let [key (range 0 24)
+            cyphertext [0xdd 0xa9 0x7c 0xa4 0x86 0x4c 0xdf 0xe0
+                        0x6e 0xaf 0x70 0xa0 0xec 0x0d 0x71 0x91]]
+        (is (= cyphertext (cypher plaintext key)))))
 
     (testing "AES-256 test FIPS-197 C.3 p.42f"
-          (let [key (range 0 32)
-                cyphertext [0x8e 0xa2 0xb7 0xca 0x51 0x67 0x45 0xbf
-                            0xea 0xfc 0x49 0x90 0x4b 0x49 0x60 0x89]]
-            (is (= cyphertext (cypher plaintext key)))))))
+      (let [key (range 0 32)
+            cyphertext [0x8e 0xa2 0xb7 0xca 0x51 0x67 0x45 0xbf
+                        0xea 0xfc 0x49 0x90 0x4b 0x49 0x60 0x89]]
+        (is (= cyphertext (cypher plaintext key)))))))
 
 (deftest inverse-test
   (testing "InvSubBytes"
